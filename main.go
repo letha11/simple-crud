@@ -20,17 +20,15 @@ func main() {
 		logrus.Error(fmt.Sprintf("Error loading .env file, error: %v", err))
 	}
 
-	r := mux.NewRouter().PathPrefix("/api").Subrouter()
-	r.Use(middleware.OnlyJson)
-	handlers.RouteHandler(r)
-
 	db := database.InitDB()
-
 	err = db.AutoMigrate(&models.User{}, &models.Post{})
-
 	if err != nil {
 		panic("failed to migrate")
 	}
+
+	r := mux.NewRouter().PathPrefix("/api").Subrouter()
+	r.Use(middleware.OnlyJson)
+	handlers.RouteHandler(r, db)
 
 	port := configs.GetPort()
 	fmt.Printf("Listening at http://127.0.0.1:%v\n", port)

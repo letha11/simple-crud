@@ -1,4 +1,4 @@
-package user
+package controller
 
 import (
 	"encoding/json"
@@ -10,17 +10,21 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/api"
 	"github.com/simple-crud-go/internal/models"
-	"github.com/simple-crud-go/internal/usecases"
+	"github.com/simple-crud-go/internal/repository/user"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+type UserController struct {
+	Repository user.Repository
+}
 
 type UserParams struct {
 	Username *string `json:"username"`
 	Name     *string `json:"name"`
 }
 
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 
 	if err != nil {
@@ -37,23 +41,23 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if name == "" {
-		usecases.UpdateUserUsername(uint(id), username)
+		c.Repository.UpdateUserUsername(uint(id), username)
 	} else if username == "" {
-		usecases.UpdateUserName(uint(id), name)
+		c.Repository.UpdateUserName(uint(id), name)
 	} else {
-		usecases.UpdateUserFull(uint(id), username, name)
+		c.Repository.UpdateUserFull(uint(id), username, name)
 	}
 
 	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("User with ID=%v successfully updated", id))
 }
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var p UserParams
 	err := json.NewDecoder(r.Body).Decode(&p)
 
 	if p.Name == nil || p.Username == nil {
 		logrus.Error(err)
-		api.RequestErrorHandler(w, errors.New("username and name field are required"), 400)
+		api.RequestErrorHandler(w, errors.New("username and name field are required"), http.StatusBadRequest)
 		return
 	}
 
@@ -62,8 +66,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = usecases.CreateUser(*p.Username, *p.Name)
-	if err != nil {
+	err = c.Repository.CreateUser(*p.Username, *p.Name)
+	if err != nil && errors.Is(err, user.UserExistErr) {
+		api.RequestErrorHandler(w, err, http.StatusConflict)
+		return
+	} else if err != nil {
 		api.InternalErrorHandler(w, err)
 		return
 	}
@@ -71,8 +78,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	api.NoDataResponseHandler(w, http.StatusCreated, "User successfully created")
 }
 
-func Users(w http.ResponseWriter, r *http.Request) {
-	user, err := usecases.GetUsers()
+func (c *UserController) Users(w http.ResponseWriter, r *http.Request) {
+	user, err := c.Repository.GetUsers()
 	if err != nil {
 		logrus.Debug(err)
 		return
@@ -87,7 +94,7 @@ func Users(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func UserByUsername(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
 	if username == "" {
@@ -95,7 +102,7 @@ func UserByUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := usecases.GetUserByUsername(username)
+	user, err := c.Repository.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			w.Write([]byte(fmt.Sprintf("User with %s not found", username)))
