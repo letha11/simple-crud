@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/simple-crud-go/internal/models"
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +31,6 @@ func (r *gormUserRepository) UpdateUser(id int, username string, name string) er
 	err := r.db.First(&user, id).Error
 
 	if err != nil {
-		logrus.Error(err)
 		return err
 	}
 
@@ -44,7 +42,10 @@ func (r *gormUserRepository) UpdateUser(id int, username string, name string) er
 		user.Name = name
 	}
 
-	r.db.Save(&user)
+	err = r.db.Save(&user).Error
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -66,7 +67,6 @@ func (r *gormUserRepository) CreateUser(username string, name string) error {
 	}
 
 	if userUsername.ID != 0 {
-		logrus.Println("user dengan username sudah ada")
 		return ErrUserExist
 	}
 
@@ -82,6 +82,8 @@ func (r *gormUserRepository) CreateUser(username string, name string) error {
 
 func (r *gormUserRepository) GetByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("username = ?", username).First(&user).Error
+	err := r.db.Where("username = ?", username).Preload("Posts", func(db *gorm.DB) *gorm.DB {
+		return db.Omit("title")
+	}).First(&user).Error
 	return &user, err
 }

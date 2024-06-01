@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/api"
 	"github.com/simple-crud-go/internal/repository"
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -18,25 +17,30 @@ type UserController struct {
 }
 
 func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	var (
+		username = r.FormValue("username")
+		name     = r.FormValue("name")
+		id, err  = strconv.Atoi(mux.Vars(r)["id"])
+	)
 
 	if err != nil {
 		api.InternalErrorHandler(w, err)
 		return
 	}
-	username := r.FormValue("username")
-	name := r.FormValue("name")
 
 	if err := r.ParseForm(); err != nil {
-		logrus.Error(err)
 		api.InternalErrorHandler(w, err)
 		return
 	}
 
 	if err := c.Repository.UpdateUser(id, username, name); err != nil {
-		logrus.Error(err)
-		api.InternalErrorHandler(w, err)
-		return
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			api.RequestErrorHandler(w, fmt.Errorf("User with id %d doesn't exist", id), 404)
+			return
+		} else {
+			api.InternalErrorHandler(w, err)
+			return
+		}
 	}
 
 	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("User with ID=%v successfully updated", id))
@@ -68,7 +72,7 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (c *UserController) Users(w http.ResponseWriter, r *http.Request) {
 	user, err := c.Repository.GetUsers()
 	if err != nil {
-		logrus.Debug(err)
+		api.InternalErrorHandler(w, err)
 		return
 	}
 
@@ -80,7 +84,6 @@ func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) 
 
 	if username == "" {
 		api.RequestErrorHandler(w, fmt.Errorf("Username cannot be empty"), 400)
-
 		return
 	}
 
@@ -88,7 +91,6 @@ func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-
 			api.RequestErrorHandler(w, fmt.Errorf("User with %s not found", username), 404)
 			return
 		}
