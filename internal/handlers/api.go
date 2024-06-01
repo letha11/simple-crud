@@ -3,12 +3,12 @@ package handlers
 import (
 	"github.com/gorilla/mux"
 	controller "github.com/simple-crud-go/internal/handlers/controller"
-	"github.com/simple-crud-go/internal/repository/user"
+	"github.com/simple-crud-go/internal/repository"
 	"gorm.io/gorm"
 )
 
 func RouteHandler(r *mux.Router, db *gorm.DB) {
-	userRepository := user.NewUserRepository(db)
+	userRepository := repository.NewUserRepository(db)
 	userController := controller.UserController{Repository: userRepository}
 
 	userPrefix := r.PathPrefix("/user").Subrouter()

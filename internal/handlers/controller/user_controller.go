@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,19 +8,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/api"
-	"github.com/simple-crud-go/internal/models"
-	"github.com/simple-crud-go/internal/repository/user"
+	"github.com/simple-crud-go/internal/repository"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type UserController struct {
-	Repository user.UserRepo
-}
-
-type UserParams struct {
-	Username *string `json:"username"`
-	Name     *string `json:"name"`
+	Repository repository.UserRepo
 }
 
 func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +43,10 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	name := r.FormValue("name")
+	var (
+		username = r.FormValue("username")
+		name     = r.FormValue("name")
+	)
 
 	if name == "" || username == "" {
 		api.RequestErrorHandler(w, errors.New("username and name field are required"), http.StatusBadRequest)
@@ -59,7 +54,7 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := c.Repository.CreateUser(username, name)
-	if err != nil && errors.Is(err, user.ErrUserExist) {
+	if err != nil && errors.Is(err, repository.ErrUserExist) {
 		api.RequestErrorHandler(w, err, http.StatusConflict)
 		return
 	} else if err != nil {
@@ -77,37 +72,27 @@ func (c *UserController) Users(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := api.GenericSuccessReponse[[]models.User]{
-		StatusCode: http.StatusOK,
-		Data:       user,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	api.GenericResponseHandler(w, http.StatusOK, user)
 }
 
 func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
 	if username == "" {
-		w.Write([]byte("Username cannot be empty"))
+		api.RequestErrorHandler(w, fmt.Errorf("Username cannot be empty"), 400)
+
 		return
 	}
 
 	user, err := c.Repository.GetByUsername(username)
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			w.Write([]byte(fmt.Sprintf("User with %s not found", username)))
 
+			api.RequestErrorHandler(w, fmt.Errorf("User with %s not found", username), 404)
 			return
 		}
 	}
 
-	resp := api.GenericSuccessReponse[*models.User]{
-		StatusCode: http.StatusOK,
-		Data:       user,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	api.GenericResponseHandler(w, http.StatusOK, user)
 }

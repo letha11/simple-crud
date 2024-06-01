@@ -1,4 +1,4 @@
-package user
+package repository
 
 import (
 	"errors"
@@ -17,17 +17,17 @@ type UserRepo interface {
 	GetUsers() ([]models.User, error)
 }
 
-func NewUserRepository(db *gorm.DB) *GormUserRepository {
-	return &GormUserRepository{
+func NewUserRepository(db *gorm.DB) *gormUserRepository {
+	return &gormUserRepository{
 		db: db,
 	}
 }
 
-type GormUserRepository struct {
+type gormUserRepository struct {
 	db *gorm.DB
 }
 
-func (r *GormUserRepository) UpdateUser(id int, username string, name string) error {
+func (r *gormUserRepository) UpdateUser(id int, username string, name string) error {
 	var user models.User
 	err := r.db.First(&user, id).Error
 
@@ -49,14 +49,14 @@ func (r *GormUserRepository) UpdateUser(id int, username string, name string) er
 	return nil
 }
 
-func (r *GormUserRepository) GetUsers() ([]models.User, error) {
+func (r *gormUserRepository) GetUsers() ([]models.User, error) {
 	var users []models.User
 	err := r.db.Omit("posts").Find(&users).Error
 
 	return users, err
 }
 
-func (r *GormUserRepository) CreateUser(username string, name string) error {
+func (r *gormUserRepository) CreateUser(username string, name string) error {
 	var err error
 	var userUsername models.User
 	err = r.db.Where("username = ?", username).First(&userUsername).Error
@@ -80,7 +80,7 @@ func (r *GormUserRepository) CreateUser(username string, name string) error {
 	return err
 }
 
-func (r *GormUserRepository) GetByUsername(username string) (*models.User, error) {
+func (r *gormUserRepository) GetByUsername(username string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("username = ?", username).First(&user).Error
 	return &user, err

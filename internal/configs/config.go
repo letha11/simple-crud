@@ -41,11 +41,3 @@ func GetDBPASS() string {
 func GetDBNAME() string {
 	return getEnv("DB_NAME", "simple")
 }
-
-// var PORT = getEnv("PORT", "5000")
-// var DB_HOST = getEnv("DB_HOST", "localhost")
-// var DB_PORT = getEnv("DB_PORT", "3306")
-// var DB_USERNAME = getEnv("DB_USER", "root")
-// var DB_PASS = getEnv("DB_PASS", "")
-// var DB_NAME = getEnv("DB_NAME", "simple")
-// var INTENTIONAL_ERROR = getEnv("INTENTION", "INTENTION")
