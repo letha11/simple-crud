@@ -16,7 +16,7 @@ import (
 )
 
 type UserController struct {
-	Repository user.Repository
+	Repository user.UserRepo
 }
 
 type UserParams struct {
@@ -40,34 +40,26 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if name == "" {
-		c.Repository.UpdateUserUsername(uint(id), username)
-	} else if username == "" {
-		c.Repository.UpdateUserName(uint(id), name)
-	} else {
-		c.Repository.UpdateUserFull(uint(id), username, name)
+	if err := c.Repository.UpdateUser(id, username, name); err != nil {
+		logrus.Error(err)
+		api.InternalErrorHandler(w, err)
+		return
 	}
 
 	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("User with ID=%v successfully updated", id))
 }
 
 func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var p UserParams
-	err := json.NewDecoder(r.Body).Decode(&p)
+	username := r.FormValue("username")
+	name := r.FormValue("name")
 
-	if p.Name == nil || p.Username == nil {
-		logrus.Error(err)
+	if name == "" || username == "" {
 		api.RequestErrorHandler(w, errors.New("username and name field are required"), http.StatusBadRequest)
 		return
 	}
 
-	if err != nil {
-		api.InternalErrorHandler(w, err)
-		return
-	}
-
-	err = c.Repository.CreateUser(*p.Username, *p.Name)
-	if err != nil && errors.Is(err, user.UserExistErr) {
+	err := c.Repository.CreateUser(username, name)
+	if err != nil && errors.Is(err, user.ErrUserExist) {
 		api.RequestErrorHandler(w, err, http.StatusConflict)
 		return
 	} else if err != nil {
@@ -102,7 +94,7 @@ func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := c.Repository.GetUserByUsername(username)
+	user, err := c.Repository.GetByUsername(username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			w.Write([]byte(fmt.Sprintf("User with %s not found", username)))
@@ -111,7 +103,7 @@ func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	resp := api.GenericSuccessReponse[models.User]{
+	resp := api.GenericSuccessReponse[*models.User]{
 		StatusCode: http.StatusOK,
 		Data:       user,
 	}

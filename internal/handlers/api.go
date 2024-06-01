@@ -8,7 +8,7 @@ import (
 )
 
 func RouteHandler(r *mux.Router, db *gorm.DB) {
-	userRepository := user.Repository{DB: db}
+	userRepository := user.NewUserRepository(db)
 	userController := controller.UserController{Repository: userRepository}
 
 	userPrefix := r.PathPrefix("/user").Subrouter()

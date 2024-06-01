@@ -3,65 +3,63 @@ package user
 import (
 	"errors"
 
-	"github.com/simple-crud-go/internal/database"
 	"github.com/simple-crud-go/internal/models"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-var UserExistErr = errors.New("User with the same username already exist")
+var ErrUserExist = errors.New("User with the same username already exist")
 
-// type UserExistErr struct{}
-//
-// func (r *UserExistErr) Error() string {
-// 	return "User with the same username already exist"
-// }
-
-type Repository struct {
-	DB *gorm.DB
+type UserRepo interface {
+	UpdateUser(id int, username string, name string) error
+	CreateUser(username string, name string) error
+	GetByUsername(username string) (*models.User, error)
+	GetUsers() ([]models.User, error)
 }
 
-func updateUser(username string, name string, user models.User) {
-	db := database.GetDBGorm()
-
-	// var user models.User
-	// db.First(&user, id)
-	user.Username = username
-	user.Name = name
-
-	db.Save(&user)
+func NewUserRepository(db *gorm.DB) *GormUserRepository {
+	return &GormUserRepository{
+		db: db,
+	}
 }
-func (r *Repository) UpdateUserFull(id uint, username string, name string) {
+
+type GormUserRepository struct {
+	db *gorm.DB
+}
+
+func (r *GormUserRepository) UpdateUser(id int, username string, name string) error {
 	var user models.User
-	r.DB.First(&user, id)
+	err := r.db.First(&user, id).Error
 
-	updateUser(username, name, user)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	if username != "" {
+		user.Username = username
+	}
+
+	if name != "" {
+		user.Name = name
+	}
+
+	r.db.Save(&user)
+
+	return nil
 }
-func (r *Repository) UpdateUserUsername(id uint, username string) {
 
-	var user models.User
-	r.DB.First(&user, id)
-
-	updateUser(username, user.Name, user)
-}
-func (r *Repository) UpdateUserName(id uint, name string) {
-	var user models.User
-	r.DB.First(&user, id)
-
-	updateUser(user.Username, name, user)
-}
-
-func (r *Repository) GetUsers() ([]models.User, error) {
+func (r *GormUserRepository) GetUsers() ([]models.User, error) {
 	var users []models.User
-	err := r.DB.Omit("posts").Find(&users).Error
+	err := r.db.Omit("posts").Find(&users).Error
 
 	return users, err
 }
 
-func (r *Repository) CreateUser(username string, name string) error {
+func (r *GormUserRepository) CreateUser(username string, name string) error {
 	var err error
 	var userUsername models.User
-	err = r.DB.Where("username = ?", username).First(&userUsername).Error
+	err = r.db.Where("username = ?", username).First(&userUsername).Error
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
@@ -69,7 +67,7 @@ func (r *Repository) CreateUser(username string, name string) error {
 
 	if userUsername.ID != 0 {
 		logrus.Println("user dengan username sudah ada")
-		return UserExistErr
+		return ErrUserExist
 	}
 
 	user := models.User{
@@ -77,13 +75,13 @@ func (r *Repository) CreateUser(username string, name string) error {
 		Name:     name,
 	}
 
-	err = r.DB.Create(&user).Error
+	err = r.db.Create(&user).Error
 
 	return err
 }
 
-func (r *Repository) GetUserByUsername(username string) (models.User, error) {
+func (r *GormUserRepository) GetByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := r.DB.Where("username = ?", username).First(&user).Error
-	return user, err
+	err := r.db.Where("username = ?", username).First(&user).Error
+	return &user, err
 }
