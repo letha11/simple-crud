@@ -6,10 +6,10 @@ import (
 )
 
 type PostRepo interface {
-	CreatePost(authorId uint, title string, body string) error
-	UpdatePost(postId uint, title string, body string) error
+	Create(post *models.Post) error
+	Update(post *models.Post) error
 	GetById(id int) (*models.Post, error)
-	GetPosts() ([]models.Post, error)
+	GetAll() ([]models.Post, error)
 }
 
 func NewPostRepository(db *gorm.DB) *gormPostRepository {
@@ -24,72 +24,24 @@ type gormPostRepository struct {
 
 func (r *gormPostRepository) GetById(id int) (*models.Post, error) {
 	var post models.Post
-	err := r.db.Model(&models.Post{}).Preload("User", func(db *gorm.DB) *gorm.DB {
-		return db.Omit("Posts")
-	}).First(&post, id).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &post, nil
+	// err := r.db.Model(&models.Post{}).Preload("User", func(db *gorm.DB) *gorm.DB {
+	// 	return db.Omit("Posts")
+	// }).First(&post, id).Error
+	err := r.db.Model(&models.Post{}).Preload("User").First(&post, id).Error
+	return &post, err
 }
 
-func (r *gormPostRepository) GetPosts() ([]models.Post, error) {
+func (r *gormPostRepository) GetAll() ([]models.Post, error) {
 	var posts []models.Post
-	err := r.db.Find(&posts).Error
+	err := r.db.Model(&models.Post{}).Preload("User").Find(&posts).Error
 
-	if err != nil {
-		return nil, err
-	}
-
-	return posts, nil
+	return posts, err
 }
 
-// CreatePost(authorId uint, title string, body string) error
-func (r *gormPostRepository) CreatePost(authorId uint, title string, body string) error {
-	var user models.User
-	err := r.db.Find(&user, authorId).Error
-
-	if err != nil {
-		return err
-	}
-
-	post := models.Post{
-		UserID: authorId,
-		Title:  title,
-		Body:   body,
-	}
-
-	err = r.db.Create(&post).Error
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *gormPostRepository) Create(post *models.Post) error {
+	return r.db.Create(&post).Error
 }
 
-func (r *gormPostRepository) UpdatePost(postId uint, title string, body string) error {
-	var post models.Post
-	err := r.db.First(&post, postId).Error
-
-	if err != nil {
-		return err
-	}
-
-	if title != "" {
-		post.Title = title
-	}
-
-	if body != "" {
-		post.Body = body
-	}
-
-	err = r.db.Save(&post).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *gormPostRepository) Update(post *models.Post) error {
+	return r.db.Save(&post).Error
 }

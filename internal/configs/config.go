@@ -41,3 +41,7 @@ func GetDBPASS() string {
 func GetDBNAME() string {
 	return getEnv("DB_NAME", "simple")
 }
+
+func GetJWTSecret() string {
+	return getEnv("JWT_SECRET", "")
+}
