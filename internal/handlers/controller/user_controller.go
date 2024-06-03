@@ -8,7 +8,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/api"
-	"github.com/simple-crud-go/internal/helper"
 	"github.com/simple-crud-go/internal/services"
 	"gorm.io/gorm"
 )
@@ -59,17 +58,11 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if name == "" || username == "" || password == "" {
-		api.RequestErrorHandler(w, errors.New("username, name and password field are required"), http.StatusBadRequest)
+		api.RequestErrorHandler(w, errors.New("username, name and password fields are required"), http.StatusBadRequest)
 		return
 	}
 
-	hashedPass, err := helper.HashPassword(password)
-	if err != nil {
-		api.InternalErrorHandler(w, err)
-		return
-	}
-
-	err = c.Service.CreateUser(username, name, hashedPass)
+	err := c.Service.CreateUser(username, name, password)
 	if err != nil && errors.Is(err, services.ErrUserExist) {
 		api.RequestErrorHandler(w, err, http.StatusConflict)
 		return

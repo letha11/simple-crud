@@ -72,10 +72,15 @@ func (s *UserService) CreateUser(username string, name string, password string) 
 		return ErrUserExist
 	}
 
+	hashedPass, err := helper.HashPassword(password)
+	if err != nil {
+		return err
+	}
+
 	newUser := models.User{
 		Username: username,
 		Name:     name,
-		Password: password,
+		Password: hashedPass,
 	}
 
 	return s.UserRepository.Create(newUser)

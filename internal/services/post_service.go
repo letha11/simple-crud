@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrMismatchAuthorID = errors.New("You do not own this post")
+
 type PostService struct {
 	PostRepository repository.PostRepo
 	UserRepository repository.UserRepo
@@ -44,13 +46,13 @@ func (s *PostService) GetAllPost() ([]models.Post, error) {
 }
 
 func (s *PostService) CreatePost(authorId int, title string, body string) error {
-	_, err := s.UserRepository.GetById(uint(authorId))
+	author, err := s.UserRepository.GetById(uint(authorId))
 	if err != nil {
 		return err
 	}
 
 	post := models.Post{
-		UserID: uint(authorId),
+		UserID: author.ID,
 		Title:  title,
 		Body:   body,
 	}
@@ -64,10 +66,16 @@ func (s *PostService) CreatePost(authorId int, title string, body string) error 
 	return nil
 }
 
-func (s *PostService) UpdatePost(postId int, title string, body string) error {
+func (s *PostService) UpdatePost(authAuthorID int, postId int, title string, body string) error {
 	post, err := s.PostRepository.GetById(postId)
 	if err != nil {
 		return err
+	}
+
+	/// Authenticated User ID are not the same as the Post getting updated
+	/// therefore we prevent it from updating the post
+	if post.UserID != uint(authAuthorID) {
+		return ErrMismatchAuthorID
 	}
 
 	if title != "" {

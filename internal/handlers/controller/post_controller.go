@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/api"
+	"github.com/simple-crud-go/internal/middleware"
 	"github.com/simple-crud-go/internal/services"
 	"gorm.io/gorm"
 )
@@ -47,12 +48,13 @@ func (c *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 
 func (c *PostController) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var (
-		title = r.FormValue("title")
-		body  = r.FormValue("body")
+		title     = r.FormValue("title")
+		body      = r.FormValue("body")
+		ctx       = r.Context()
+		authorIdS = ctx.Value(middleware.UserIdKey).(string)
 	)
 
-	// FIXME it should not been hardcoded authorId (update when proper authentication works)
-	id, err := strconv.Atoi(mux.Vars(r)["authorId"])
+	authorId, err := strconv.Atoi(authorIdS)
 	if err != nil {
 		api.InternalErrorHandler(w, err)
 		return
@@ -63,10 +65,7 @@ func (c *PostController) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = c.Service.CreatePost(id, title, body); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			api.RequestErrorHandler(w, fmt.Errorf("User with id %v doesn't exists", id), 404)
-		}
+	if err := c.Service.CreatePost(authorId, title, body); err != nil {
 		api.InternalErrorHandler(w, err)
 		return
 	}
@@ -79,6 +78,8 @@ func (c *PostController) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		title   = r.FormValue("title")
 		body    = r.FormValue("body")
 		id, err = strconv.Atoi(mux.Vars(r)["id"])
+		ctx     = r.Context()
+		authIdS = ctx.Value(middleware.UserIdKey).(string)
 	)
 
 	if err != nil {
@@ -86,9 +87,18 @@ func (c *PostController) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = c.Service.UpdatePost(id, title, body); err != nil {
+	authId, err := strconv.Atoi(authIdS)
+	if err != nil {
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	if err = c.Service.UpdatePost(authId, id, title, body); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			api.RequestErrorHandler(w, fmt.Errorf("Post with id = %d doesn't exist", id), 404)
+			return
+		} else if errors.Is(err, services.ErrMismatchAuthorID) {
+			api.RequestErrorHandler(w, err, http.StatusUnauthorized)
 			return
 		} else {
 			api.InternalErrorHandler(w, err)
