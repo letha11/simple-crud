@@ -24,6 +24,9 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 		postController = controller.PostController{Service: postService}
 		authController = controller.AuthController{Service: authService}
 	)
+	r.HandleFunc("/login", authController.Login).Methods("POST")
+	r.HandleFunc("/register", authController.Register).Methods("POST")
+
 	userPrefix := r.PathPrefix("/user").Subrouter()
 	userPrefix.HandleFunc("/{username}", userController.UserByUsername).Methods("GET")
 	userPrefix.HandleFunc("", userController.Users).Methods("GET")
@@ -36,5 +39,4 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 	postPrefix.HandleFunc("", middleware.AuthMiddleware(http.HandlerFunc(postController.CreatePost)).ServeHTTP).Methods("POST")
 	postPrefix.HandleFunc("/{id}", middleware.AuthMiddleware(http.HandlerFunc(postController.UpdatePost)).ServeHTTP).Methods("PUT")
 
-	r.HandleFunc("/login", authController.Login).Methods("POST")
 }

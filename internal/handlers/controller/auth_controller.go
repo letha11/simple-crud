@@ -38,3 +38,29 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
 	api.GenericResponseHandler(w, 200, token)
 }
+
+func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
+	var (
+		name     = r.FormValue("name")
+		username = r.FormValue("username")
+		password = r.FormValue("password")
+	)
+
+	if name == "" || username == "" || password == "" {
+		api.RequestErrorHandler(w, errors.New("name, username and password fields are required"), http.StatusBadRequest)
+		return
+	}
+
+	data, err := c.Service.Register(name, username, password)
+	if err != nil {
+		if errors.Is(err, services.ErrUserExist) {
+			api.RequestErrorHandler(w, err, http.StatusConflict)
+			return
+		}
+
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	api.GenericResponseHandler(w, 200, data)
+}

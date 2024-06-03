@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/simple-crud-go/internal/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,6 +16,11 @@ type ErrorResponse struct {
 type NoDataResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
+}
+
+type RegisterSuccessResponse struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
 }
 
 type GenericSuccessReponse[T any] struct {
