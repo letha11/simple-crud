@@ -13,11 +13,13 @@ import (
 
 type AuthService struct {
 	UserRepository repository.UserRepo
+	PasswordCrypto helper.PasswordCrypto
 }
 
-func NewAuthService(userRepo repository.UserRepo) *AuthService {
+func NewAuthService(userRepo repository.UserRepo, passwordCrypto helper.PasswordCrypto) *AuthService {
 	return &AuthService{
 		UserRepository: userRepo,
+		PasswordCrypto: passwordCrypto,
 	}
 }
 
@@ -33,7 +35,7 @@ func (s *AuthService) Login(username string, password string) (string, error) {
 		return "", gorm.ErrRecordNotFound
 	}
 
-	if err = helper.ComparePassword(user.Password, password); err != nil {
+	if err = s.PasswordCrypto.ComparePassword(user.Password, password); err != nil {
 		logrus.Error(err)
 		return "", err
 	}
@@ -59,7 +61,7 @@ func (s *AuthService) Register(name string, username string, password string) (*
 		return nil, ErrUserExist
 	}
 
-	hashedPassword, err := helper.HashPassword(password)
+	hashedPassword, err := s.PasswordCrypto.HashPassword(password)
 	if err != nil {
 		logrus.Error(nil)
 		return nil, err

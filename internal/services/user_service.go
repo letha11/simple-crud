@@ -14,11 +14,13 @@ var ErrUserExist = errors.New("User with the same username already exist")
 
 type UserService struct {
 	UserRepository repository.UserRepo
+	PasswordCrypto helper.PasswordCrypto
 }
 
-func NewUserService(userRepo repository.UserRepo) *UserService {
+func NewUserService(userRepo repository.UserRepo, passwordCrypto helper.PasswordCrypto) *UserService {
 	return &UserService{
 		UserRepository: userRepo,
+		PasswordCrypto: passwordCrypto,
 	}
 }
 
@@ -72,7 +74,7 @@ func (s *UserService) CreateUser(username string, name string, password string) 
 		return ErrUserExist
 	}
 
-	hashedPass, err := helper.HashPassword(password)
+	hashedPass, err := s.PasswordCrypto.HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -114,7 +116,7 @@ func (s *UserService) UpdateUser(id int, username string, name string, password 
 	}
 
 	if password != "" {
-		hashed, err := helper.HashPassword(password)
+		hashed, err := s.PasswordCrypto.HashPassword(password)
 		if err != nil {
 			logrus.Error(err)
 			return err

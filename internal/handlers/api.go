@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/simple-crud-go/internal/handlers/controller"
+	"github.com/simple-crud-go/internal/helper"
 	"github.com/simple-crud-go/internal/middleware"
 	"github.com/simple-crud-go/internal/repository"
 	"github.com/simple-crud-go/internal/services"
@@ -13,12 +14,14 @@ import (
 
 func RouteHandler(r *mux.Router, db *gorm.DB) {
 	var (
+		bcryptPassCrypto = helper.BcryptPasswordCrypto{}
+
 		userRepository = repository.NewUserRepository(db)
 		postRepository = repository.NewPostRepository(db)
 
-		userService = services.NewUserService(userRepository)
+		userService = services.NewUserService(userRepository, bcryptPassCrypto)
 		postService = services.NewPostService(postRepository, userRepository)
-		authService = services.NewAuthService(userRepository)
+		authService = services.NewAuthService(userRepository, bcryptPassCrypto)
 
 		userController = controller.UserController{Service: userService}
 		postController = controller.PostController{Service: postService}
