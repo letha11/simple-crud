@@ -8,11 +8,9 @@ import (
 	"github.com/simple-crud-go/internal/configs"
 )
 
-// func CreateToken(username string) (string, error) {
 func CreateToken(id int) (string, error) {
 	idString := strconv.Itoa(id)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
-		// "aud": username,
 		"aud": idString,
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Add(time.Hour * (7 * 24)).Unix(),
