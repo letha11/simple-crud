@@ -27,6 +27,7 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 		postController = controller.PostController{Service: postService}
 		authController = controller.AuthController{Service: authService}
 	)
+
 	r.HandleFunc("/login", authController.Login).Methods("POST")
 	r.HandleFunc("/register", authController.Register).Methods("POST")
 
