@@ -16,6 +16,8 @@ var UserIdKey CtxKey = 0
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jwtHelper := helper.NewDefaultJWTHelper()
+
 		token := r.Header.Get("Authorization")
 		if token == "" {
 			api.RequestErrorHandler(w, errors.New("Missing authentication"), http.StatusUnauthorized)
@@ -24,7 +26,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		token = token[len("bearer:"):]
 
-		if err := helper.CheckToken(token); err != nil {
+		if err := jwtHelper.CheckToken(token); err != nil {
 			if !errors.Is(err, jwt.ErrInvalidKey) {
 				api.InternalErrorHandler(w, err)
 				return
@@ -34,7 +36,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		aud, err := helper.ExtractAudienceToken(token)
+		aud, err := jwtHelper.ExtractAudienceToken(token)
 		if err != nil {
 			api.InternalErrorHandler(w, err)
 		}

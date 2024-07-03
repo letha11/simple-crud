@@ -8,15 +8,33 @@ import (
 	"github.com/simple-crud-go/internal/configs"
 )
 
-func CreateToken(id int) (string, error) {
-	idString := strconv.Itoa(id)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
-		"aud": idString,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(time.Hour * (7 * 24)).Unix(),
-	})
+//go:generate mockgen -destination=./mocks/jwt.go -source=./jwt.go
+type JWTHelper interface {
+	CreateToken(id int) (string, error)
+	CheckToken(token string) error
+	ExtractAudienceToken(token string) (string, error)
+}
 
-	signedToken, err := token.SignedString([]byte(configs.GetJWTSecret()))
+type jwtHelper struct {
+	Manager JWTManager
+}
+
+func NewJWTHelper(jwtManager JWTManager) JWTHelper {
+	return jwtHelper{
+		Manager: jwtManager,
+	}
+}
+
+func NewDefaultJWTHelper() JWTHelper {
+	return jwtHelper{
+		Manager: NewDefaultJWTManager(),
+	}
+}
+
+func (j jwtHelper) CreateToken(id int) (string, error) {
+	idString := strconv.Itoa(id)
+
+	signedToken, err := j.Manager.SignToken(idString)
 	if err != nil {
 		return "", err
 	}
@@ -24,10 +42,8 @@ func CreateToken(id int) (string, error) {
 	return signedToken, nil
 }
 
-func CheckToken(token string) error {
-	t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(configs.GetJWTSecret()), nil
-	})
+func (j jwtHelper) CheckToken(token string) error {
+	t, err := j.Manager.ParseToken(token)
 
 	if err != nil {
 		return err
@@ -40,10 +56,8 @@ func CheckToken(token string) error {
 	return nil
 }
 
-func ExtractAudienceToken(token string) (string, error) {
-	t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(configs.GetJWTSecret()), nil
-	})
+func (j jwtHelper) ExtractAudienceToken(token string) (string, error) {
+	t, err := j.Manager.ParseToken(token)
 
 	if err != nil {
 		return "", err
@@ -60,4 +74,31 @@ func ExtractAudienceToken(token string) (string, error) {
 	}
 
 	return claims[0], nil
+}
+
+type JWTManager interface {
+	SignToken(data string) (string, error)
+	ParseToken(token string) (*jwt.Token, error)
+}
+
+type DefaultJWTManager struct{}
+
+func NewDefaultJWTManager() DefaultJWTManager {
+	return DefaultJWTManager{}
+}
+
+func (m DefaultJWTManager) SignToken(data string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
+		"aud": data,
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(time.Hour * (7 * 24)).Unix(),
+	})
+
+	return token.SignedString(configs.GetJWTSecret())
+}
+
+func (m DefaultJWTManager) ParseToken(token string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(configs.GetJWTSecret()), nil
+	})
 }

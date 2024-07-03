@@ -15,13 +15,14 @@ import (
 func RouteHandler(r *mux.Router, db *gorm.DB) {
 	var (
 		bcryptPassCrypto = helper.BcryptPasswordCrypto{}
+		jwtHelper        = helper.NewDefaultJWTHelper()
 
 		userRepository = repository.NewUserRepository(db)
 		postRepository = repository.NewPostRepository(db)
 
 		userService = services.NewUserService(userRepository, bcryptPassCrypto)
 		postService = services.NewPostService(postRepository, userRepository)
-		authService = services.NewAuthService(userRepository, bcryptPassCrypto)
+		authService = services.NewAuthService(userRepository, bcryptPassCrypto, jwtHelper)
 
 		userController = controller.UserController{Service: userService}
 		postController = controller.PostController{Service: postService}

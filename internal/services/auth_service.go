@@ -14,12 +14,14 @@ import (
 type AuthService struct {
 	UserRepository repository.UserRepo
 	PasswordCrypto helper.PasswordCrypto
+	jwtHelper      helper.JWTHelper
 }
 
-func NewAuthService(userRepo repository.UserRepo, passwordCrypto helper.PasswordCrypto) *AuthService {
+func NewAuthService(userRepo repository.UserRepo, passwordCrypto helper.PasswordCrypto, jwtHelper helper.JWTHelper) *AuthService {
 	return &AuthService{
 		UserRepository: userRepo,
 		PasswordCrypto: passwordCrypto,
+		jwtHelper:      jwtHelper,
 	}
 }
 
@@ -41,7 +43,7 @@ func (s *AuthService) Login(username string, password string) (string, error) {
 	}
 
 	// token, err := helper.CreateToken(username)
-	token, err := helper.CreateToken(int(user.ID))
+	token, err := s.jwtHelper.CreateToken(int(user.ID))
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +87,7 @@ func (s *AuthService) Register(name string, username string, password string) (*
 		return nil, err
 	}
 
-	token, err := helper.CreateToken(int(user.ID))
+	token, err := s.jwtHelper.CreateToken(int(user.ID))
 	if err != nil {
 		return nil, err
 	}
