@@ -94,7 +94,7 @@ func (m DefaultJWTManager) SignToken(data string) (string, error) {
 		"exp": time.Now().Add(time.Hour * (7 * 24)).Unix(),
 	})
 
-	return token.SignedString(configs.GetJWTSecret())
+	return token.SignedString([]byte(configs.GetJWTSecret()))
 }
 
 func (m DefaultJWTManager) ParseToken(token string) (*jwt.Token, error) {
