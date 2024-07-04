@@ -44,5 +44,6 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 	postPrefix.HandleFunc("/{id}", postController.GetPostById).Methods("GET")
 	postPrefix.HandleFunc("", middleware.AuthMiddleware(http.HandlerFunc(postController.CreatePost)).ServeHTTP).Methods("POST")
 	postPrefix.HandleFunc("/{id}", middleware.AuthMiddleware(http.HandlerFunc(postController.UpdatePost)).ServeHTTP).Methods("PUT")
+	postPrefix.HandleFunc("/{id}", middleware.AuthMiddleware(http.HandlerFunc(postController.DeletePostById)).ServeHTTP).Methods("DELETE")
 
 }

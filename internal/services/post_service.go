@@ -94,3 +94,24 @@ func (s *PostService) UpdatePost(authAuthorID int, postId int, title string, bod
 
 	return nil
 }
+
+func (s *PostService) DeletePostById(authAuthorID int, postId int) error {
+	post, err := s.PostRepository.GetById(postId)
+	if err != nil {
+		return err
+	}
+
+	/// Authenticated User ID are not the same as the Post getting updated
+	/// therefore we prevent it from updating the post
+	if post.UserID != uint(authAuthorID) {
+		return ErrMismatchAuthorID
+	}
+
+	err = s.PostRepository.Delete(uint(postId))
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	return nil
+}

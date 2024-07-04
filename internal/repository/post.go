@@ -10,6 +10,7 @@ type PostRepo interface {
 	Update(post *models.Post) error
 	GetById(id int) (*models.Post, error)
 	GetAll() ([]models.Post, error)
+	Delete(id uint) error
 }
 
 func NewPostRepository(db *gorm.DB) *gormPostRepository {
@@ -44,4 +45,8 @@ func (r *gormPostRepository) Create(post *models.Post) error {
 
 func (r *gormPostRepository) Update(post *models.Post) error {
 	return r.db.Save(&post).Error
+}
+
+func (r *gormPostRepository) Delete(id uint) error {
+	return r.db.Delete(&models.Post{}, id).Error
 }

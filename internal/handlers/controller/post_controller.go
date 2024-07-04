@@ -108,3 +108,36 @@ func (c *PostController) UpdatePost(w http.ResponseWriter, r *http.Request) {
 
 	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("Post with id %v successfully updated", id))
 }
+func (c *PostController) DeletePostById(w http.ResponseWriter, r *http.Request) {
+	var (
+		id, err = strconv.Atoi(mux.Vars(r)["id"])
+		ctx     = r.Context()
+		authIdS = ctx.Value(middleware.UserIdKey).(string)
+	)
+
+	if err != nil {
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	authId, err := strconv.Atoi(authIdS)
+	if err != nil {
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	if err = c.Service.DeletePostById(authId, id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			api.RequestErrorHandler(w, fmt.Errorf("Post with id = %d doesn't exist", id), 404)
+			return
+		} else if errors.Is(err, services.ErrMismatchAuthorID) {
+			api.RequestErrorHandler(w, err, http.StatusUnauthorized)
+			return
+		} else {
+			api.InternalErrorHandler(w, err)
+			return
+		}
+	}
+
+	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("Post with id %v successfully deleted", id))
+}

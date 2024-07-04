@@ -271,3 +271,73 @@ func TestUpdatePost(t *testing.T) {
 		})
 	}
 }
+
+func TestDeletePost(t *testing.T) {
+	var (
+		postRepo, _, service = postServiceWithMock(t)
+		loggedInUser         = models.User{
+			ID:       2,
+			Name:     "Ibka",
+			Username: "ibkaanhar",
+			Password: "123",
+		}
+		toBeDeletedPost = models.Post{
+			ID:     4,
+			Title:  "dummy title 2",
+			Body:   "dummy body 2",
+			UserID: 2,
+		}
+		diffUserAndPost = models.Post{
+			ID:     3,
+			Title:  "dummy title 2",
+			Body:   "dummy body 2",
+			UserID: 3,
+		}
+	)
+
+	cases := []struct {
+		name     string
+		mockFunc func()
+		err      error
+	}{
+		{
+			"Unknown Error when getting post",
+			func() {
+				postRepo.EXPECT().GetById(int(toBeDeletedPost.ID)).Return(nil, errUnexpected)
+			},
+			errUnexpected,
+		},
+		{
+			"Logged in user ID mismatch with the post Author/UserID to be deleted",
+			func() {
+				postRepo.EXPECT().GetById(int(toBeDeletedPost.ID)).Return(&diffUserAndPost, nil)
+			},
+			services.ErrMismatchAuthorID,
+		},
+		{
+			"Unknown Error when deleting the post",
+			func() {
+				postRepo.EXPECT().GetById(int(toBeDeletedPost.ID)).Return(&toBeDeletedPost, nil)
+				postRepo.EXPECT().Delete(toBeDeletedPost.ID).Return(errUnexpected)
+			},
+			errUnexpected,
+		},
+		{
+			"Success",
+			func() {
+				postRepo.EXPECT().GetById(int(toBeDeletedPost.ID)).Return(&toBeDeletedPost, nil)
+				postRepo.EXPECT().Delete(toBeDeletedPost.ID).Return(nil)
+			},
+			nil,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.mockFunc()
+			err := service.DeletePostById(int(loggedInUser.ID), int(toBeDeletedPost.ID))
+
+			assert.Equal(t, err, c.err)
+		})
+	}
+}
