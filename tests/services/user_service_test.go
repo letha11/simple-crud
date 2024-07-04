@@ -288,6 +288,12 @@ func TestUpdateUser(t *testing.T) {
 			Username: "ibkaanhar2",
 			Password: "abc",
 		}
+		userDiffID = models.User{
+			ID:       2,
+			Name:     "Ibka",
+			Username: "ibkaanhar1",
+			Password: "abc",
+		}
 		userDiffUsername = models.User{
 			ID:       1,
 			Name:     "Ibka",
@@ -315,6 +321,13 @@ func TestUpdateUser(t *testing.T) {
 				userRepoMock.EXPECT().GetById(newDataUser.ID).Return(nil, gorm.ErrRecordNotFound).Times(1)
 			},
 			gorm.ErrRecordNotFound,
+		},
+		{
+			"Logged in user and User to be updated ID doesn't match",
+			func() {
+				userRepoMock.EXPECT().GetById(newDataUser.ID).Return(&userDiffID, nil).Times(1)
+			},
+			services.ErrMismatchID,
 		},
 		{
 			"Unknown Error when checking another user with the username",
@@ -358,6 +371,72 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			c.mockFunc()
 			err := service.UpdateUser(int(newDataUser.ID), newDataUser.Username, newDataUser.Name, newDataUser.Password)
+			assert.Equal(t, err, c.err)
+		})
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	var (
+		hashedPass   = "dummy"
+		existingUser = models.User{
+			ID:       1,
+			Name:     "Ibka",
+			Username: "ibkaanhar",
+			Password: hashedPass,
+		}
+		existingDiffUser = models.User{
+			ID:       2,
+			Name:     "Ibka",
+			Username: "ibkaanhar",
+			Password: hashedPass,
+		}
+
+		userRepoMock, service, _ = userServiceWithMock(t)
+	)
+
+	cases := []struct {
+		name     string
+		mockFunc func()
+		err      error
+	}{
+		{
+			"Unknown error when getting the user with the passed in id",
+			func() {
+				userRepoMock.EXPECT().GetById(uint(1)).Return(nil, errUnexpected).Times(1)
+			},
+			errUnexpected,
+		},
+		{
+			"Logged in user and User to be deleted ID doesn't match",
+			func() {
+				userRepoMock.EXPECT().GetById(uint(1)).Return(&existingDiffUser, nil).Times(1)
+			},
+			services.ErrMismatchID,
+		},
+		{
+			"Unknown Error when deleting the user",
+			func() {
+				userRepoMock.EXPECT().GetById(uint(1)).Return(&existingUser, nil).Times(1)
+				userRepoMock.EXPECT().DeleteById(uint(1)).Return(errUnexpected).Times(1)
+			},
+			errUnexpected,
+		},
+		{
+			"Success",
+			func() {
+				userRepoMock.EXPECT().GetById(uint(1)).Return(&existingUser, nil).Times(1)
+				userRepoMock.EXPECT().DeleteById(uint(1)).Return(nil).Times(1)
+			},
+			nil,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.mockFunc()
+			err := service.DeleteUserById(1)
+
 			assert.Equal(t, err, c.err)
 		})
 	}

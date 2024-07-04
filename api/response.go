@@ -9,12 +9,12 @@ import (
 )
 
 type ErrorResponse struct {
-	Status  string `json:"status"`
+	Error   bool   `json:"error"`
 	Message string `json:"message"`
 }
 
 type NoDataResponse struct {
-	Status  string `json:"status"`
+	Error   bool   `json:"error"`
 	Message string `json:"message"`
 }
 
@@ -23,14 +23,14 @@ type RegisterSuccessResponse struct {
 	User  *models.User `json:"user"`
 }
 
-type GenericSuccessReponse[T any] struct {
-	Status string `json:"status"`
-	Data   T      `json:"data"`
+type GenericSuccessResponse[T any] struct {
+	Error bool `json:"error"`
+	Data  T    `json:"data"`
 }
 
 func writeError(w http.ResponseWriter, message string, code int) {
 	err := ErrorResponse{
-		Status:  "error",
+		Error:   true,
 		Message: message,
 	}
 
@@ -57,10 +57,10 @@ func writeSuccessResponse(w http.ResponseWriter, code int, response interface{})
 
 var (
 	GenericResponseHandler = func(w http.ResponseWriter, code int, data any) {
-		resp := GenericSuccessReponse[any]{Status: "success", Data: data}
+		resp := GenericSuccessResponse[any]{Error: false, Data: data}
 		writeSuccessResponse(w, code, resp)
 	}
 	NoDataResponseHandler = func(w http.ResponseWriter, code int, message string) {
-		writeSuccessResponse(w, code, NoDataResponse{Status: "success", Message: message})
+		writeSuccessResponse(w, code, NoDataResponse{Error: false, Message: message})
 	}
 )

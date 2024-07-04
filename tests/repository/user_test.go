@@ -125,3 +125,22 @@ func TestUserUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, mock.ExpectationsWereMet())
 }
+
+func TestUserDeleteById(t *testing.T) {
+	_, db, mock := DB(t)
+
+	repo := repository.NewUserRepository(db)
+
+	idToBeDeleted := 1
+
+	query := "UPDATE `users` SET `deleted_at`=\\? WHERE `users`.`id` = \\?" // query will be update because the model have `deleted_at` field when this field exist, gorm will automatically use update instead of DELETE (https://gorm.io/docs/delete.html#Soft-Delete)
+
+	mock.ExpectBegin()
+	mock.ExpectExec(query).WithArgs(AnyTime{}, idToBeDeleted).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.DeleteById(uint(idToBeDeleted))
+
+	assert.NoError(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}

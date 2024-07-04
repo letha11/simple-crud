@@ -11,6 +11,7 @@ import (
 )
 
 var ErrUserExist = errors.New("User with the same username already exist")
+var ErrMismatchID = errors.New("Unauthorized")
 
 type UserService struct {
 	UserRepository repository.UserRepo
@@ -95,6 +96,10 @@ func (s *UserService) UpdateUser(id int, username string, name string, password 
 		return err
 	}
 
+	if user.ID != uint(id) {
+		return ErrMismatchID
+	}
+
 	if username != "" {
 		if user.Username != username {
 			userWithUsername, err := s.UserRepository.GetByUsername(username)
@@ -126,4 +131,26 @@ func (s *UserService) UpdateUser(id int, username string, name string, password 
 	}
 
 	return s.UserRepository.Update(*user)
+}
+
+func (s *UserService) DeleteUserById(id int) error {
+	user, err := s.UserRepository.GetById(uint(id))
+
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	if user.ID != uint(id) {
+		return ErrMismatchID
+	}
+
+	err = s.UserRepository.DeleteById(uint(id))
+
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	return nil
 }

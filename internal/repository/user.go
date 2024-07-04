@@ -11,6 +11,7 @@ type UserRepo interface {
 	GetById(id uint) (*models.User, error)
 	GetByUsername(username string) (*models.User, error)
 	GetAll() ([]models.User, error)
+	DeleteById(id uint) error
 }
 
 func NewUserRepository(db *gorm.DB) *gormUserRepository {
@@ -48,4 +49,9 @@ func (r *gormUserRepository) GetById(id uint) (*models.User, error) {
 	var user models.User
 	err := r.db.Preload("Posts").First(&user, id).Error
 	return &user, err
+}
+
+func (r *gormUserRepository) DeleteById(id uint) error {
+	err := r.db.Delete(&models.User{}, id).Error
+	return err
 }

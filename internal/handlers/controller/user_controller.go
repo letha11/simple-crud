@@ -21,25 +21,30 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		username = r.FormValue("username")
 		name     = r.FormValue("name")
 		password = r.FormValue("password")
-		id, err  = strconv.Atoi(mux.Vars(r)["id"])
+		ctx      = r.Context()
+		authIdS  = ctx.Value(middleware.UserIdKey).(string)
 	)
-
-	if err != nil {
-		api.InternalErrorHandler(w, err)
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		api.InternalErrorHandler(w, err)
 		return
 	}
 
-	if err := c.Service.UpdateUser(id, username, name, password); err != nil {
+	authId, err := strconv.Atoi(authIdS)
+	if err != nil {
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	if err := c.Service.UpdateUser(authId, username, name, password); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			api.RequestErrorHandler(w, fmt.Errorf("User with id %d doesn't exist", id), 404)
+			api.RequestErrorHandler(w, fmt.Errorf("User with id %d doesn't exist", authId), 404)
 			return
 		} else if errors.Is(err, services.ErrUserExist) {
 			api.RequestErrorHandler(w, err, http.StatusConflict)
+			return
+		} else if errors.Is(err, services.ErrMismatchID) {
+			api.RequestErrorHandler(w, err, http.StatusUnauthorized)
 			return
 		} else {
 			api.InternalErrorHandler(w, err)
@@ -47,7 +52,7 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("User with ID=%v successfully updated", id))
+	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("User with ID=%v successfully updated", authId))
 }
 
 func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -102,4 +107,34 @@ func (c *UserController) UserByUsername(w http.ResponseWriter, r *http.Request) 
 	}
 
 	api.GenericResponseHandler(w, http.StatusOK, user)
+}
+func (c *UserController) DeleteUserById(w http.ResponseWriter, r *http.Request) {
+	var (
+		ctx     = r.Context()
+		authIdS = ctx.Value(middleware.UserIdKey).(string)
+	)
+
+	authId, err := strconv.Atoi(authIdS)
+	if err != nil {
+		api.InternalErrorHandler(w, err)
+		return
+	}
+
+	err = c.Service.DeleteUserById(authId)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			api.RequestErrorHandler(w, fmt.Errorf("User with id = %s not found", authId), 404)
+			return
+		}
+
+		if errors.Is(err, services.ErrMismatchID) {
+			api.RequestErrorHandler(w, err, http.StatusUnauthorized)
+			return
+		}
+
+		api.InternalErrorHandler(w, err)
+	}
+
+	api.NoDataResponseHandler(w, http.StatusOK, "Successfully deleted user")
 }

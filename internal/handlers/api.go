@@ -36,7 +36,8 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 	userPrefix.HandleFunc("/{username}", userController.UserByUsername).Methods("GET")
 	userPrefix.HandleFunc("", userController.Users).Methods("GET")
 	// userPrefix.HandleFunc("", userController.CreateUser).Methods("POST")
-	userPrefix.HandleFunc("/{id}", userController.UpdateUser).Methods("PUT")
+	userPrefix.HandleFunc("/{id}", middleware.AuthMiddleware(http.HandlerFunc(userController.UpdateUser)).ServeHTTP).Methods("PUT")
+	userPrefix.HandleFunc("", middleware.AuthMiddleware(http.HandlerFunc(userController.DeleteUserById)).ServeHTTP).Methods("DELETE")
 
 	postPrefix := r.PathPrefix("/post").Subrouter()
 	postPrefix.HandleFunc("", postController.GetPosts).Methods("GET")
