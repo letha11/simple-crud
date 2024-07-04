@@ -17,6 +17,17 @@ type PostController struct {
 	Service *services.PostService
 }
 
+// GetPostById Get post by id
+// @summary Get post by id
+// @description Get post by id
+// @tags Post
+// @id get-post-by-id
+// @produce json
+// @param id path int true "Post ID"
+// @success 200 {object} api.GenericSuccessResponse[models.Post] "Success"
+// @failure 404 {object} api.ErrorResponse "Not Found"
+// @failure 500 {object} api.ErrorResponse "Internal Server Error"
+// @router /post/{id} [get]
 func (c *PostController) GetPostById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -36,6 +47,15 @@ func (c *PostController) GetPostById(w http.ResponseWriter, r *http.Request) {
 	api.GenericResponseHandler(w, http.StatusOK, post)
 }
 
+// GetPosts Get all posts
+// @summary Get all posts
+// @description Get all posts
+// @tags Post
+// @id get-all-posts
+// @produce json
+// @success 200 {object} api.GenericSuccessResponse[[]models.Post] "Success"
+// @failure 500 {object} api.ErrorResponse "Internal Server Error"
+// @router /post [get]
 func (c *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := c.Service.GetAllPost()
 	if err != nil {
@@ -46,6 +66,20 @@ func (c *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	api.GenericResponseHandler(w, http.StatusOK, posts)
 }
 
+// CreatePost Create a post
+// @summary Create a post
+// @description Create a post
+// @tags Post
+// @id create-post
+// @accept mpfd
+// @produce json
+// @param title formData string true "Post Title"
+// @param body formData string true "Post Body"
+// @success 200 {object} api.NoDataResponse "Post created"
+// @failure 400 {object} api.ErrorResponse "Conflict"
+// @failure 500 {object} api.ErrorResponse "Internal Server Error"
+// @router /post [post]
+// @security Bearer
 func (c *PostController) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var (
 		title     = r.FormValue("title")
@@ -73,6 +107,23 @@ func (c *PostController) CreatePost(w http.ResponseWriter, r *http.Request) {
 	api.NoDataResponseHandler(w, http.StatusCreated, "Post successfully created")
 }
 
+// UpdatePost Update a posted post
+// @summary Update a posted post
+// @description Update a posted post
+// @tags Post
+// @id update-post
+// @accept mpfd
+// @produce json
+// @param id path int true "Post ID"
+// @param title formData string false "Post Title"
+// @param body formData string false "Post Body"
+// @success 200 {object} api.NoDataResponse "Post updated"
+// @failure 404 {object} api.ErrorResponse "Not Found"
+// @failure 401 {object} api.ErrorResponse "Unauthorized"
+// @failure 400 {object} api.ErrorResponse "Conflict"
+// @failure 500 {object} api.ErrorResponse "Internal Server Error"
+// @router /post/{id} [put]
+// @security Bearer
 func (c *PostController) UpdatePost(w http.ResponseWriter, r *http.Request) {
 	var (
 		title   = r.FormValue("title")
@@ -108,6 +159,20 @@ func (c *PostController) UpdatePost(w http.ResponseWriter, r *http.Request) {
 
 	api.NoDataResponseHandler(w, http.StatusOK, fmt.Sprintf("Post with id %v successfully updated", id))
 }
+
+// DeletePostById Delete a post by id
+// @summary Delete a post by id
+// @description Delete a post by id
+// @tags Post
+// @id delete-post
+// @produce json
+// @param id path int true "Post ID"
+// @success 200 {object} api.NoDataResponse "Post deleted"
+// @failure 404 {object} api.ErrorResponse "Not Found"
+// @failure 401 {object} api.ErrorResponse "Unauthorized"
+// @failure 500 {object} api.ErrorResponse "Internal Server Error"
+// @router /post/{id} [delete]
+// @security Bearer
 func (c *PostController) DeletePostById(w http.ResponseWriter, r *http.Request) {
 	var (
 		id, err = strconv.Atoi(mux.Vars(r)["id"])

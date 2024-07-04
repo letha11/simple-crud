@@ -1,0 +1,478 @@
+basePath: /api
+definitions:
+  api.ErrorResponse:
+    properties:
+      error:
+        type: boolean
+      message:
+        type: string
+    type: object
+  api.GenericSuccessResponse-api_RegisterSuccessResponse:
+    properties:
+      data:
+        $ref: '#/definitions/api.RegisterSuccessResponse'
+      error:
+        type: boolean
+    type: object
+  api.GenericSuccessResponse-array_models_Post:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Post'
+        type: array
+      error:
+        type: boolean
+    type: object
+  api.GenericSuccessResponse-models_Post:
+    properties:
+      data:
+        $ref: '#/definitions/models.Post'
+      error:
+        type: boolean
+    type: object
+  api.GenericSuccessResponse-string:
+    properties:
+      data:
+        type: string
+      error:
+        type: boolean
+    type: object
+  api.NoDataResponse:
+    properties:
+      error:
+        type: boolean
+      message:
+        type: string
+    type: object
+  api.RegisterSuccessResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  models.Post:
+    properties:
+      author:
+        $ref: '#/definitions/models.User'
+      body:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      posts:
+        items:
+          $ref: '#/definitions/models.Post'
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:5000
+info:
+  contact:
+    email: ibkaanhar1@gmail.com
+    name: Ibka Anhar Fatcha
+    url: https://github.com/letha11
+  description: This is a learning project, the purpose of this API are just me getting
+    familiar with the language and learn about how to build an REST API in Golang
+  title: Simple CRUD & Authentication
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Log in the user
+      operationId: login
+      parameters:
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT Token
+          schema:
+            $ref: '#/definitions/api.GenericSuccessResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Log in the user
+      tags:
+      - Authentication
+  /post:
+    get:
+      description: Get all posts
+      operationId: get-all-posts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/api.GenericSuccessResponse-array_models_Post'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get all posts
+      tags:
+      - Post
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a post
+      operationId: create-post
+      parameters:
+      - description: Post Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Post Body
+        in: formData
+        name: body
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post created
+          schema:
+            $ref: '#/definitions/api.NoDataResponse'
+        "400":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a post
+      tags:
+      - Post
+  /post/{id}:
+    delete:
+      description: Delete a post by id
+      operationId: delete-post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post deleted
+          schema:
+            $ref: '#/definitions/api.NoDataResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a post by id
+      tags:
+      - Post
+    get:
+      description: Get post by id
+      operationId: get-post-by-id
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/api.GenericSuccessResponse-models_Post'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get post by id
+      tags:
+      - Post
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update a posted post
+      operationId: update-post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Post Title
+        in: formData
+        name: title
+        type: string
+      - description: Post Body
+        in: formData
+        name: body
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post updated
+          schema:
+            $ref: '#/definitions/api.NoDataResponse'
+        "400":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a posted post
+      tags:
+      - Post
+  /register:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Register a new user
+      operationId: register
+      parameters:
+      - description: Name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User Registered
+          schema:
+            $ref: '#/definitions/api.GenericSuccessResponse-api_RegisterSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Authentication
+  /user:
+    delete:
+      description: Delete authenticated/logged in user
+      operationId: delete-user-by-id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/api.NoDataResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete authenticated user
+      tags:
+      - User
+    get:
+      description: Get all users
+      operationId: get-users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get all users
+      tags:
+      - User
+  /user/{id}:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update authenticated user
+      operationId: update-user
+      parameters:
+      - description: Username
+        in: formData
+        name: username
+        type: string
+      - description: Name
+        in: formData
+        name: name
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/api.NoDataResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update authenticated user
+      tags:
+      - User
+  /user/{username}:
+    get:
+      description: Get user by username
+      operationId: get-user-by-username
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get user by username
+      tags:
+      - User
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and the JWT Token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

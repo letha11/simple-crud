@@ -9,6 +9,7 @@ import (
 	"github.com/simple-crud-go/internal/middleware"
 	"github.com/simple-crud-go/internal/repository"
 	"github.com/simple-crud-go/internal/services"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"gorm.io/gorm"
 )
 
@@ -28,6 +29,10 @@ func RouteHandler(r *mux.Router, db *gorm.DB) {
 		postController = controller.PostController{Service: postService}
 		authController = controller.AuthController{Service: authService}
 	)
+
+	r.PathPrefix("/docs").Handler(httpSwagger.WrapHandler)
+
+	r = r.PathPrefix("/api").Subrouter()
 
 	r.HandleFunc("/login", authController.Login).Methods("POST")
 	r.HandleFunc("/register", authController.Register).Methods("POST")

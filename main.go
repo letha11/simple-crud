@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	_ "github.com/simple-crud-go/docs"
 	"github.com/simple-crud-go/internal/configs"
 	"github.com/simple-crud-go/internal/database"
 	"github.com/simple-crud-go/internal/handlers"
@@ -14,6 +15,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// @title Simple CRUD & Authentication
+// @version 1.0
+// @description This is a learning project, the purpose of this API are just me getting familiar with the language and learn about how to build an REST API in Golang
+
+// @contact.name Ibka Anhar Fatcha
+// @contact.url https://github.com/letha11
+// @contact.email ibkaanhar1@gmail.com
+
+// @host localhost:5000
+// @BasePath /api
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and the JWT Token
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -26,8 +42,8 @@ func main() {
 		panic("failed to migrate")
 	}
 
-	r := mux.NewRouter().PathPrefix("/api").Subrouter()
-	r.Use(middleware.OnlyJson)
+	r := mux.NewRouter()
+	// r.Use(middleware.OnlyJson)
 	handlers.RouteHandler(r, db)
 
 	port := configs.GetPort()
