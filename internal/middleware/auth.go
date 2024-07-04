@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/simple-crud-go/api"
@@ -20,6 +21,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		token := r.Header.Get("Authorization")
 		if token == "" {
+			api.RequestErrorHandler(w, errors.New("Missing authentication"), http.StatusUnauthorized)
+			return
+		}
+
+		if !strings.Contains(token, "Bearer") {
 			api.RequestErrorHandler(w, errors.New("Missing authentication"), http.StatusUnauthorized)
 			return
 		}
